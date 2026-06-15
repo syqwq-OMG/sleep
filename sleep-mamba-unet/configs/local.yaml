@@ -1,0 +1,5 @@
+base_config: configs/default.yaml
+data:
+  raw_dir: ../child-mind-institute-detect-sleep-states
+outputs:
+  root: outputs

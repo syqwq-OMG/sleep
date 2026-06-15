@@ -1,0 +1,44 @@
+seed: 42
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  train_series: train_series.parquet
+  train_events: train_events.csv
+  test_series: test_series.parquet
+features:
+  rolling_windows_steps: [12, 60, 360, 1440]
+  use_time_features: true
+  use_quality_flags: true
+labels:
+  sigma_steps: [36, 120, 240]
+  sigma_weights: [0.5, 0.3, 0.2]
+model:
+  name: SleepMambaUNet
+  base_dim: 96
+  dropout: 0.1
+  num_heads: 4
+training:
+  folds: 5
+  fold: 0
+  window_size: 17280
+  stride: 4320
+  batch_size: 2
+  epochs: 20
+  lr: 0.0005
+  weight_decay: 0.01
+  amp: true
+  grad_clip: 1.0
+loss:
+  sleep_weight: 0.5
+  boundary_weight: 0.2
+  rank_weight: 0.0
+postprocess:
+  smooth_window_steps: 12
+  peak_distance_steps: 180
+  min_sleep_steps: 360
+  max_sleep_steps: 11520
+  score_threshold: 0.001
+  max_events_per_series_event: 200
+  tolerances_steps: [12, 36, 60, 90, 120, 150, 180, 240, 300, 360]
+outputs:
+  root: outputs

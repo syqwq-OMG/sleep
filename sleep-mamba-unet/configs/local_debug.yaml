@@ -1,0 +1,16 @@
+base_config: configs/local.yaml
+training:
+  epochs: 1
+  batch_size: 1
+  window_size: 720
+  stride: 360
+  folds: 2
+model:
+  base_dim: 32
+  num_heads: 4
+debug:
+  n_series: 4
+  max_windows_per_series: 4
+  series_sample: random
+  window_sampling: event_focused
+  event_window_fraction: 0.75
