@@ -1,0 +1,18 @@
+base_config: configs/kaggle.yaml
+
+training:
+  epochs: 10
+  batch_size: 1
+  window_size: 7200
+  stride: 7200
+  folds: 2
+
+model:
+  base_dim: 64
+  num_heads: 4
+
+postprocess:
+  smooth_window_steps: 24
+  peak_distance_steps: 180
+  score_threshold: 0.0001
+  max_events_per_series_event: 200
