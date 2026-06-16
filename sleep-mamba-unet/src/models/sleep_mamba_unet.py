@@ -9,8 +9,16 @@ from .mamba_lite import MambaLiteBlock
 
 
 class SleepMambaUNet(nn.Module):
-    def __init__(self, in_channels: int, base_dim: int = 96, num_heads: int = 4, dropout: float = 0.1):
+    def __init__(
+        self,
+        in_channels: int,
+        base_dim: int = 96,
+        num_heads: int = 4,
+        dropout: float = 0.1,
+        boundary_mix: float = 0.0,
+    ):
         super().__init__()
+        self.boundary_mix = float(boundary_mix)
         d = base_dim
         self.proj = nn.Conv1d(in_channels, d, 1)
         self.stem = ConvBlock(d, dropout=dropout)
@@ -39,9 +47,17 @@ class SleepMambaUNet(nn.Module):
         y = self.up1(y, e1)
         y = self.up0(y, e0)
         logits = self.head(y)[..., :orig_t].transpose(1, 2)
+        onset = logits[..., 0]
+        wakeup = logits[..., 1]
+        if self.boundary_mix > 0:
+            sleep = logits[..., 2]
+            ds = torch.zeros_like(sleep)
+            ds[:, 1:] = sleep[:, 1:] - sleep[:, :-1]
+            onset = onset + self.boundary_mix * ds
+            wakeup = wakeup - self.boundary_mix * ds
         return {
-            "onset": logits[..., 0],
-            "wakeup": logits[..., 1],
+            "onset": onset,
+            "wakeup": wakeup,
             "sleep": logits[..., 2],
             "invalid": logits[..., 3],
         }

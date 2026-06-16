@@ -151,7 +151,13 @@ def train_one_fold(config: dict, fold: int):
     feature_names = train_ds.feature_names or valid_ds.feature_names
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_cfg = config.get("model", {})
-    model = SleepMambaUNet(len(feature_names), model_cfg.get("base_dim", 96), model_cfg.get("num_heads", 4), model_cfg.get("dropout", 0.1)).to(device)
+    model = SleepMambaUNet(
+        len(feature_names),
+        model_cfg.get("base_dim", 96),
+        model_cfg.get("num_heads", 4),
+        model_cfg.get("dropout", 0.1),
+        model_cfg.get("boundary_mix", 0.0),
+    ).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=config["training"].get("lr", 5e-4), weight_decay=config["training"].get("weight_decay", 0.01))
     loader = DataLoader(train_ds, batch_size=config["training"].get("batch_size", 2), shuffle=True, num_workers=0)
     scaler = torch.cuda.amp.GradScaler(enabled=bool(config["training"].get("amp", True)) and device.type == "cuda")

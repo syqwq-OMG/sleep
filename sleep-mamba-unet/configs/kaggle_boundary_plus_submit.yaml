@@ -1,0 +1,9 @@
+base_config: configs/kaggle_medium_plus_submit.yaml
+
+model:
+  base_dim: 64
+  num_heads: 4
+  boundary_mix: 0.35
+
+outputs:
+  root: /kaggle/working/outputs_boundary_plus

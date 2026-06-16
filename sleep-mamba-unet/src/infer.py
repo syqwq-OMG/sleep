@@ -65,7 +65,13 @@ def run_infer(config: dict, checkpoints: list[str], phase: str, weights: list[fl
         ckpt = torch.load(ckpt_path, map_location=device)
         feature_names = ckpt["feature_names"]
         mcfg = ckpt.get("config", config).get("model", config.get("model", {}))
-        model = SleepMambaUNet(len(feature_names), mcfg.get("base_dim", 96), mcfg.get("num_heads", 4), mcfg.get("dropout", 0.1)).to(device)
+        model = SleepMambaUNet(
+            len(feature_names),
+            mcfg.get("base_dim", 96),
+            mcfg.get("num_heads", 4),
+            mcfg.get("dropout", 0.1),
+            mcfg.get("boundary_mix", 0.0),
+        ).to(device)
         model.load_state_dict(ckpt["model"])
         models.append(model)
     if not models:
