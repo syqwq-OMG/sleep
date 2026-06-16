@@ -18,4 +18,4 @@ postprocess:
   max_events_per_series_event: 200
   peak_weight: 0.85
   mass_weight: 0.15
-  invalid_penalty: 0.0
+  invalid_penalty: 0.05

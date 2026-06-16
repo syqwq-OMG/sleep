@@ -46,12 +46,21 @@ def _load_test(config: dict, phase: str) -> pd.DataFrame:
     return df
 
 
-def run_infer(config: dict, checkpoints: list[str], phase: str):
+def run_infer(config: dict, checkpoints: list[str], phase: str, weights: list[float] | None = None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     series = _load_test(config, phase)
     rows = []
     models = []
     feature_names = None
+    if weights is None:
+        weights = [1.0] * len(checkpoints)
+    if len(weights) != len(checkpoints):
+        raise ValueError("weights length must match checkpoints length")
+    weights = np.asarray(weights, dtype="float64")
+    weight_sum = float(weights.sum())
+    if weight_sum <= 0:
+        raise ValueError("weights must sum to a positive value")
+    weights = weights / weight_sum
     for ckpt_path in checkpoints:
         ckpt = torch.load(ckpt_path, map_location=device)
         feature_names = ckpt["feature_names"]
@@ -66,15 +75,17 @@ def run_infer(config: dict, checkpoints: list[str], phase: str):
         if feature_names and names != feature_names:
             raise ValueError("feature mismatch between checkpoint and inference data")
         windows = make_windows(g, config["training"].get("window_size", 17280), config["training"].get("stride", 4320), pad=True)
-        pred = np.mean([predict_series(model, x, windows, device) for model in models], axis=0)
+        pred = np.zeros((len(g), 4), dtype="float64")
+        for model, weight in zip(models, weights):
+            pred += weight * predict_series(model, x, windows, device)
         tmp = pd.DataFrame(
             {
                 "series_id": sid,
                 "step": g["step"].to_numpy(dtype=int),
-                "p_onset": pred[:, 0],
-                "p_wakeup": pred[:, 1],
-                "p_sleep": pred[:, 2],
-                "p_invalid": pred[:, 3],
+                "p_onset": pred[:, 0].astype("float32"),
+                "p_wakeup": pred[:, 1].astype("float32"),
+                "p_sleep": pred[:, 2].astype("float32"),
+                "p_invalid": pred[:, 3].astype("float32"),
             }
         )
         rows.append(tmp)
@@ -91,9 +102,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/default.yaml")
     parser.add_argument("--checkpoints", nargs="+", required=True)
+    parser.add_argument("--weights", nargs="+", type=float, default=None)
     parser.add_argument("--phase", default="test", choices=["test", "train"])
     args = parser.parse_args()
-    run_infer(load_config(args.config), args.checkpoints, args.phase)
+    run_infer(load_config(args.config), args.checkpoints, args.phase, args.weights)
 
 
 if __name__ == "__main__":
