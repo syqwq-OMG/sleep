@@ -1,0 +1,4 @@
+base_config: configs/kaggle_medium_plus.yaml
+seed: 777
+outputs:
+  root: /kaggle/working/outputs_seed777

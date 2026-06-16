@@ -16,3 +16,6 @@ postprocess:
   peak_distance_steps: 180
   score_threshold: 0.0001
   max_events_per_series_event: 200
+  peak_weight: 0.85
+  mass_weight: 0.15
+  invalid_penalty: 0.0

@@ -61,6 +61,9 @@ def find_candidates(pred_df: pd.DataFrame, event: str, config: dict | None = Non
     distance = int(cfg.get("peak_distance_steps", 180))
     threshold = float(cfg.get("score_threshold", 0.001))
     max_n = int(cfg.get("max_events_per_series_event", 200))
+    peak_weight = float(cfg.get("peak_weight", 0.85))
+    mass_weight = float(cfg.get("mass_weight", 0.15))
+    invalid_penalty = float(cfg.get("invalid_penalty", 0.0))
     prob_col = f"p_{event}"
     rows = []
     for series_id, g in pred_df.groupby("series_id", sort=False):
@@ -79,7 +82,7 @@ def find_candidates(pred_df: pd.DataFrame, event: str, config: dict | None = Non
             peak_score = float(smooth_values[idx])
             mass = float(values[max(0, idx - 12) : min(len(values), idx + 13)].mean()) if len(values) else 0.0
             invalid = float(g.get("p_invalid", pd.Series(0, index=g.index)).iloc[max(0, idx - 12) : min(len(g), idx + 13)].mean())
-            score = np.clip(0.85 * peak_score + 0.15 * mass - 0.05 * invalid, 0, 1)
+            score = np.clip(peak_weight * peak_score + mass_weight * mass - invalid_penalty * invalid, 0, 1)
             rows.append({"series_id": series_id, "step": int(g.loc[idx, "step"]), "event": event, "score": float(score)})
     return pd.DataFrame(rows, columns=["series_id", "step", "event", "score"])
 
