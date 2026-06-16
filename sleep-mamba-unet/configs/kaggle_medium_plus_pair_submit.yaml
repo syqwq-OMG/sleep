@@ -1,0 +1,16 @@
+base_config: configs/kaggle_medium_plus_submit.yaml
+
+postprocess:
+  smooth_window_steps: 36
+  peak_distance_steps: 180
+  score_threshold: 0.0001
+  max_events_per_series_event: 200
+  peak_weight: 0.85
+  mass_weight: 0.15
+  invalid_penalty: 0.05
+  use_pair_filter: true
+  max_pairs_per_series: 120
+  pair_sleep_weight: 0.25
+  pair_invalid_penalty: 0.05
+  pair_fallback_keep_per_event: 30
+  pair_fallback_score_scale: 0.35
