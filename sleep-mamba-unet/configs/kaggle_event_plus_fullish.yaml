@@ -1,0 +1,18 @@
+base_config: configs/kaggle_event_plus.yaml
+
+training:
+  epochs: 12
+  batch_size: 1
+  window_size: 10800
+  stride: 5400
+  folds: 2
+
+debug:
+  n_series: 240
+  max_windows_per_series: 16
+  series_sample: random
+  window_sampling: event_focused
+  event_window_fraction: 0.75
+
+outputs:
+  root: /kaggle/working/outputs_event_plus_fullish
