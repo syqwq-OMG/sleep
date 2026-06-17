@@ -1,0 +1,13 @@
+base_config: configs/kaggle_medium_plus.yaml
+
+loss:
+  event_weight: 2.0
+  event_loss: focal
+  focal_gamma: 1.5
+  focal_alpha: 0.65
+  sleep_weight: 0.25
+  boundary_weight: 0.1
+  rank_weight: 0.0
+
+outputs:
+  root: /kaggle/working/outputs_event_plus_w2
