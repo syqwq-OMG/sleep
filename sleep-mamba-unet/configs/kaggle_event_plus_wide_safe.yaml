@@ -6,6 +6,7 @@ training:
   window_size: 7200
   stride: 7200
   folds: 2
+  lazy_windows: true
 
 debug:
   n_series: 240

@@ -77,20 +77,57 @@ class WindowDataset(Dataset):
     def __init__(self, series_df: pd.DataFrame, events_df: pd.DataFrame, config: dict, series_ids: set[str], split: str = "train"):
         self.items = []
         self.feature_names = None
+        self.lazy_windows = bool(config.get("training", {}).get("lazy_windows", False))
+        self.series_cache = {}
+        self.events_df = events_df
+        self.config = config
         tcfg = config.get("training", {})
         for sid, g in iter_series(series_df[series_df["series_id"].astype(str).isin(series_ids)]):
-            x, names = build_features(g, **config.get("features", {}))
-            self.feature_names = names
             targets = make_training_targets(g, events_df, config)
             windows = make_windows(g, tcfg.get("window_size", 17280), tcfg.get("stride", 4320), pad=True)
             windows = _limit_windows(windows, targets, config, split)
-            for w in windows:
-                self.items.append((sid, g["step"].to_numpy(), x, targets, w))
+            if self.lazy_windows:
+                if self.feature_names is None and windows:
+                    sample = g.iloc[windows[0]["start_idx"] : windows[0]["end_idx"]].reset_index(drop=True)
+                    _, self.feature_names = build_features(sample, **config.get("features", {}))
+                self.series_cache[sid] = g.reset_index(drop=True)
+                for w in windows:
+                    self.items.append((sid, w))
+            else:
+                x, names = build_features(g, **config.get("features", {}))
+                self.feature_names = names
+                for w in windows:
+                    self.items.append((sid, g["step"].to_numpy(), x, targets, w))
 
     def __len__(self):
         return len(self.items)
 
     def __getitem__(self, idx):
+        if self.lazy_windows:
+            sid, w = self.items[idx]
+            g = self.series_cache[sid]
+            start, end, valid_len = w["start_idx"], w["end_idx"], w["valid_len"]
+            win_g = g.iloc[start:end].reset_index(drop=True)
+            x, names = build_features(win_g, **self.config.get("features", {}))
+            if self.feature_names is None:
+                self.feature_names = names
+            targets = make_training_targets(win_g, self.events_df, self.config)
+            win_x = np.zeros((len(w["mask"]), x.shape[1]), dtype="float32")
+            win_x[:valid_len] = x[:valid_len]
+            out = {
+                "x": torch.from_numpy(win_x),
+                "mask_valid": torch.from_numpy(w["mask"].astype("float32")),
+                "series_id": sid,
+                "steps": torch.from_numpy(
+                    np.pad(win_g["step"].to_numpy(), (0, len(w["mask"]) - valid_len), constant_values=-1).astype("int64")
+                ),
+            }
+            for key, arr in targets.items():
+                y = np.zeros(len(w["mask"]), dtype="float32")
+                y[:valid_len] = arr[:valid_len]
+                out[key] = torch.from_numpy(y)
+            return out
+
         sid, steps, x, targets, w = self.items[idx]
         start, end, valid_len = w["start_idx"], w["end_idx"], w["valid_len"]
         win_x = np.zeros((len(w["mask"]), x.shape[1]), dtype="float32")
