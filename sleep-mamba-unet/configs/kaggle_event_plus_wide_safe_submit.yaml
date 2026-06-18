@@ -1,0 +1,4 @@
+base_config: configs/kaggle_medium_plus_tuned_submit.yaml
+
+outputs:
+  root: /kaggle/working/outputs_event_plus_wide_safe
